@@ -4,8 +4,9 @@ from gym import logger
 
 logger.set_level(logger.DISABLED)
 
-# w = Wu("HHPHPPHPHPHHPH")
-# w.train()
+for i in range(5):
+    # w = Wu("HHHHHPPHHHHPHH")
+    # w.train()
 
-antq = AntQ("HHPPHPPHPPHPPHPPHPPHPPHH")
-antq.train()
+    antq = AntQ("HHHHHPPHHHHPHH")
+    antq.train()

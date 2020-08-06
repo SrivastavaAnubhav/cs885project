@@ -31,7 +31,7 @@ def get_heuristic(env, actions):
 class AntQ:
 	def __init__(self, seq):
 		self.n = len(seq)
-		self.k = self.n  # TODO: change this to self.n
+		self.k = self.n
 		self.envs = [Lattice2DEnv(seq, trap_penalty=0) for agent in range(self.k)]
 		self.state_num = 1 + 4 * (self.n - 1)
 		self.aq = np.random.rand(self.state_num, 4)
@@ -53,23 +53,19 @@ class AntQ:
 			if is_train:
 				action = np.random.choice(valid_actions, p=probs)
 			else:
-				# action = np.argmax(self.aq[current_state])
-				# if action not in valid_actions:
-				# 	action = np.random.choice(valid_actions)
 				action = valid_actions[np.argmax(probs)]
 
 			state_actions.append([current_state, action])
 
 			_, reward, done, info = env.step(action)
-			if not done:
-				assert reward == 0
+			if info["is_trapped"]:
+				reward = -2
 
 			next_state = (4 * i) + action + 1
 			i += 1
 
 			if is_train:
-				self.aq[current_state, action] = (1 - alpha) * self.aq[current_state, action] + \
-												 alpha * gamma * max(self.aq[next_state])
+				self.aq[current_state, action] += alpha * gamma * max(self.aq[next_state])
 
 			current_state = next_state
 
@@ -78,28 +74,45 @@ class AntQ:
 	def train(self):
 		grand_best_r = 0
 		r_test_max = 0
+		test_rewards = []
+		best_state_actions = []
+		grand_best_i = 0
+
 		for i in range(iterations):
 			best_r = 0
+			best_agent = 0
 			sa = []
 			for agent in range(self.k):
 				r, state_actions = self.oneepisode(self.envs[agent], True)
-				# sa.append(state_actions)
+				sa.append(state_actions)
 				if r > best_r:
 					best_r = r
+					best_agent = agent
 					best_state_actions = state_actions
+					if best_r > grand_best_r:
+						grand_best_r = best_r
+						grand_best_i = i
 
-			# print("Best reward: ", r)
-			# print(best_state_actions)
-			for state, action in best_state_actions:
-				self.aq[state][action] += alpha * r / self.n
+			for agent in range(self.k):
+				for state, action in sa[agent]:
+					self.aq[state][action] = (1 - alpha) * self.aq[state][action]
+
+				if agent == best_agent:
+					for state, action in sa[agent]:
+						self.aq[state][action] += alpha * best_r / self.n
 
 			if i % 100 == 0:
-				r, _ = self.oneepisode(self.envs[0], False)
-				if r > r_test_max:
-					r_test_max = r
-					print("best r_test_max:", r)
-				print(self.aq)
-				print(i, '/', iterations, 'r =', r)
+				r_test, _ = self.oneepisode(self.envs[0], False)
+				test_rewards.append(r_test)
+				if r_test > r_test_max:
+					r_test_max = r_test
+					# print("best r_test_max:", r_test)
 
-		print("Best reward: ", r)
+				print(i, '/', iterations, 'r_test =', r_test)
+				print("Grand best r: ", grand_best_r)
+
+		print("Final best test reward: ", r_test_max)
 		print(best_state_actions)
+		print("Grand best reward: ", grand_best_r)
+		print("Grand best reward iteration: ", grand_best_i)
+		print(test_rewards)

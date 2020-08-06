@@ -61,25 +61,26 @@ class Wu:
 
 		return reward
 
-
 	def train(self):
-		print(self.state_num)
-		print(self.state_transfer)
 		r_test_max = 0
 		r_train_max = 0
-
+		r_test_max = 0
+		test_rewards = []
 
 		for i in range(iterations):
 			r = self.oneepisode(True)
 			if r > r_train_max:
 				r_train_max = r
-				print("best r_train_max:", r)
-			if i % 10000 == 0:
+				# print("best r_train_max:", r_train_max)
+			if i % 100 == 0:
 				r = self.oneepisode(False)
 				if r > r_test_max:
 					r_test_max = r
-					print("best r_test_max:", r)
+					# print("best r_test_max:", r_test_max)
 				print(i, '/', iterations, 'r=', r)
+				# print("best r_train_max:", r_train_max)
+				test_rewards.append(r)
 
-		r = self.oneepisode(False)
-		print("Best reward: ", r)
+		print("r_test_max: ", r_test_max)
+		# print("r_train_max: ", r_train_max)
+		print(test_rewards)

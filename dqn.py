@@ -22,16 +22,16 @@ from lattice2d_env import *
 
 """Hyper parameters"""
 
-EPISODES = 2000  # number of episodes
-EPS_START = 0.9  # e-greedy threshold start value
+EPISODES = 10000  # number of episodes
+EPS_START = 1  # e-greedy threshold start value
 EPS_END = 0.05  # e-greedy threshold end value
 EPS_DECAY = 200  # e-greedy threshold decay
 GAMMA = 0.99  # Q-learning discount factor
 LR = 0.001  # NN optimizer learning rate
-HIDDEN_LAYER = 10  # NN hidden layer size
-BATCH_SIZE = 500  # Q-learning batch size
+HIDDEN_LAYER = 25  # NN hidden layer size
+BATCH_SIZE = 32  # Q-learning batch size
 TARGET_UPDATE = 100  # frequency of target update
-BUFFER_SIZE = 10000  # capacity of the replay buffer 
+BUFFER_SIZE = 10000  # capacity of the replay buffer
 
 # if gpu is to be used
 use_cuda = False  # torch.cuda.is_available()
@@ -63,7 +63,7 @@ class ReplayMemory:
 class QNetwork(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
-        self.lstm = nn.LSTM(input_size=4, hidden_size=25, num_layers=3, dropout=0.25, batch_first=True)
+        self.lstm = nn.LSTM(input_size=4, hidden_size=HIDDEN_LAYER, num_layers=3, dropout=0.25, batch_first=True)
         self.fc = nn.Linear(25, 4)
 
     def forward(self, x):
@@ -73,8 +73,7 @@ class QNetwork(nn.Module):
         return x
 
 """Initialize environment and variables"""
-
-env = Lattice2DEnv("HPHHPP", trap_penalty=0)
+env = Lattice2DEnv("HHHHHHHHHHHHPHPHPPHHPPHHPPHPPHHPPHHPPHPPHHPPHHPPHPHPHHHHHHHHHHHH", trap_penalty=0)
 
 model = QNetwork()
 target = QNetwork()
@@ -115,6 +114,7 @@ def run_episode(e):
         action = select_epsilon_greedy_action(FloatTensor([[state]]))
         _, reward, done, info = env.step(int(action[0, 0]))
         if info["is_trapped"]:
+            # pass
             reward = -2
         if not done:
             reward = -0.01
@@ -136,7 +136,7 @@ def run_episode(e):
 
         if done:
             episode_rewards.append(reward)
-            if len(episode_rewards) % 10 == 0:
+            if e % 100 == 0:
                 print("Episode {0} finished after {1} steps with reward {2}".format(e, steps, reward))
                 plot_rewards()
             break
@@ -187,10 +187,10 @@ def plot_rewards():
     plt.ylabel('Reward')
     plt.plot(rewards.numpy())
     # take 100 episode averages and plot them too
-    if len(rewards) >= 100:
-        means = rewards.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
-        plt.plot(means.numpy())
+    # if len(rewards) >= 100:
+    #     means = rewards.unfold(0, 100, 1).mean(1).view(-1)
+    #     means = torch.cat((torch.zeros(99), means))
+    #     plt.plot(means.numpy())
 
     plt.pause(0.001)  # pause a bit so that plots are updated
 
@@ -203,6 +203,7 @@ for e in range(EPISODES):
 
 
 print('Complete')
+print(episode_rewards)
 env.close()
 plt.ioff()
 plt.show()
